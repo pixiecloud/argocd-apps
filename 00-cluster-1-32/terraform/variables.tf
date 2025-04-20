@@ -9,24 +9,24 @@ variable "region" {
 # # ################################################################################
 # # # AWS EFS CSI Driver
 # # ################################################################################
-variable "vpc_id" {
-  description = "The VPC ID to associate with the EFS"
-  type        = list(string)
-  default     = [
-    "vpc-05fe76c22b3059d48"
-  ]
-}
+# variable "vpc_id" {
+#   description = "The VPC ID to associate with the EFS"
+#   type        = list(string)
+#   default     = [
+#     "vpc-05fe76c22b3059d48"
+#   ]
+# }
 
-# Ensure you define subnet_ids variable in your variables.tf
-variable "subnet_ids" {
-  description = "List of subnet IDs where the EFS mount targets will be created"
-  type        = list(string)
-  default     = [
-    "subnet-05330494f54f0da1c", # Subnet 1
-    "subnet-09c9480163c55e6df", # Subnet 2
-    "subnet-0d22c9dc956e5bc44"  # Subnet 3
-  ]
-}
+# # Ensure you define subnet_ids variable in your variables.tf
+# variable "subnet_ids" {
+#   description = "List of subnet IDs where the EFS mount targets will be created"
+#   type        = list(string)
+#   default     = [
+#     "subnet-05330494f54f0da1c", # Subnet 1
+#     "subnet-09c9480163c55e6df", # Subnet 2
+#     "subnet-0d22c9dc956e5bc44"  # Subnet 3
+#   ]
+# }
 
 # variable "name" {
 #   description = "The name of the EFS file system"

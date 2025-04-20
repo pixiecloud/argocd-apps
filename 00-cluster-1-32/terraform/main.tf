@@ -167,23 +167,23 @@ module "eks_blueprints_addons" {
 
   create_delay_dependencies = [for prof in module.eks.eks_managed_node_groups : prof.node_group_arn]
   
-  enable_argocd                                = false #true
-  enable_argo_rollouts                         = false #true
-  enable_argo_workflows                        = false #true
-  enable_aws_load_balancer_controller = true
-  enable_metrics_server               = true
+  enable_argocd                                = false # true
+  enable_argo_rollouts                         = false # true
+  enable_argo_workflows                        = false  # create with own bootstrap
+  enable_aws_load_balancer_controller = false # true
+  enable_metrics_server               = false # true
   
   eks_addons = {
   aws-ebs-csi-driver = {
     service_account_role_arn = module.pixies-ebs_csi_driver.iam_role_arn
   }
-  ## collins adding efs addon
-  aws-efs-csi-driver = {
-    service_account_role_arn = module.pixies-efs_csi_driver.iam_role_arn
-  }
+  # ## collins adding efs addon
+  # aws-efs-csi-driver = {
+  #   service_account_role_arn = module.pixies-efs_csi_driver.iam_role_arn
+  # }
 }
 
-  enable_aws_for_fluentbit = false #true
+  enable_aws_for_fluentbit = false # true
   aws_for_fluentbit = {
     set = [
       {
@@ -196,7 +196,7 @@ module "eks_blueprints_addons" {
   enable_karpenter = true
 
   karpenter = {
-    chart_version       = "1.0.2"
+    chart_version       = "1.0.1"
     repository_username = data.aws_ecrpublic_authorization_token.token.user_name
     repository_password = data.aws_ecrpublic_authorization_token.token.password
   }
@@ -226,7 +226,6 @@ module "pixies-ebs_csi_driver" {
 
   tags = local.tags
 }
-
 module "aws-auth" {
   source  = "terraform-aws-modules/eks/aws//modules/aws-auth"
   version = "~> 20.0"
@@ -305,24 +304,24 @@ module "vpc" {
 # Add EFS Resources  ## collins add this for the sake of efs
 #---------------------------------------------------------------
 
-module "pixies-efs_csi_driver" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "5.44.0"
+# module "pixies-efs_csi_driver" {
+#   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+#   version = "5.44.0"
 
-  role_name_prefix = "${module.eks.cluster_name}-efs-driver-"
-  attach_vpc_cni_policy              = true
-  vpc_cni_enable_ipv4                = true
-  attach_efs_csi_policy = true
+#   role_name_prefix = "${module.eks.cluster_name}-efs-driver-"
+#   attach_vpc_cni_policy              = true
+#   vpc_cni_enable_ipv4                = true
+#   attach_efs_csi_policy = true
 
-  oidc_providers = {
-    efs = {
-      provider_arn               = module.eks.oidc_provider_arn
-      namespace_service_accounts = ["kube-system:efs-csi-controller-sa"]
-    }
-  }
+#   oidc_providers = {
+#     efs = {
+#       provider_arn               = module.eks.oidc_provider_arn
+#       namespace_service_accounts = ["kube-system:efs-csi-controller-sa"]
+#     }
+#   }
   
-  tags = local.tags
-}
+#   tags = local.tags
+# }
 
 # #-----------------------------------------------------------
 # # Add VPC  cni_irsa
@@ -331,7 +330,7 @@ module "vpc_cni_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "~> 5.0"
 
-  role_name_prefix      = "pixies-CNI-IRSA"
+  role_name_prefix      = "MIMEO-CNI-IRSA"
   attach_vpc_cni_policy = true
   vpc_cni_enable_ipv4   = true
 
@@ -343,65 +342,65 @@ module "vpc_cni_irsa" {
   }
 }
 
-# #-----------------------------------------------------------
-# # Add EFS 
-# #------------------------------------------------------------
-module "attach_efs_csi_role" {
-  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+# # #-----------------------------------------------------------
+# # # Add EFS 
+# # #------------------------------------------------------------
+# module "attach_efs_csi_role" {
+#   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
 
-  role_name             = "efs-csi-role"
-  attach_efs_csi_policy = true
+#   role_name             = "efs-csi-role"
+#   attach_efs_csi_policy = true
 
-  oidc_providers = {
-    ex = {
-      provider_arn               = module.eks.oidc_provider_arn
-      namespace_service_accounts = ["kube-system:efs-csi-controller-sa"]
-    }
-  }
+#   oidc_providers = {
+#     ex = {
+#       provider_arn               = module.eks.oidc_provider_arn
+#       namespace_service_accounts = ["kube-system:efs-csi-controller-sa"]
+#     }
+#   }
 
-  tags = local.tags
-}
+#   tags = local.tags
+# }
 
-resource "aws_security_group" "allow_nfs" {
-  name        = "pixies nfs sg"
-  description = "Allow NFS inbound traffic"
-  vpc_id      = local.vpc_id
+# resource "aws_security_group" "allow_nfs" {
+#   name        = "pixies nfs sg"
+#   description = "Allow NFS inbound traffic"
+#   vpc_id      = local.vpc_id
 
-  ingress {
-    description = "NFS from VPC"
-    from_port   = 2049
-    to_port     = 2049
-    protocol    = "tcp"
-    cidr_blocks = [local.vpc_cidr]
-  }
+#   ingress {
+#     description = "NFS from VPC"
+#     from_port   = 2049
+#     to_port     = 2049
+#     protocol    = "tcp"
+#     cidr_blocks = [local.vpc_cidr]
+#   }
 
-  egress {
-    from_port        = 0
-    to_port          = 0
-    protocol         = "-1"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
-  }
+#   egress {
+#     from_port        = 0
+#     to_port          = 0
+#     protocol         = "-1"
+#     cidr_blocks      = ["0.0.0.0/0"]
+#     ipv6_cidr_blocks = ["::/0"]
+#   }
 
-}
+# }
 
 
-resource "aws_efs_file_system" "pixies_node_efs" {
-  creation_token = "efs-production-node"
-  encrypted      = true # collins
-}
+# resource "aws_efs_file_system" "pixies_node_efs" {
+#   creation_token = "efs-production-node"
+#   encrypted      = true # collins
+# }
 
-resource "aws_efs_mount_target" "pixies_node_efs_mt_0" {
-  file_system_id  = aws_efs_file_system.pixies_node_efs.id
-  subnet_id       = module.vpc.private_subnets[0]
-  security_groups = [aws_security_group.allow_nfs.id]
-}
+# resource "aws_efs_mount_target" "pixies_node_efs_mt_0" {
+#   file_system_id  = aws_efs_file_system.pixies_node_efs.id
+#   subnet_id       = module.vpc.private_subnets[0]
+#   security_groups = [aws_security_group.allow_nfs.id]
+# }
 
-resource "aws_efs_mount_target" "pixies_node_efs_mt_1" {
-  file_system_id  = aws_efs_file_system.pixies_node_efs.id
-  subnet_id       = module.vpc.private_subnets[1]
-  security_groups = [aws_security_group.allow_nfs.id]
-}
+# resource "aws_efs_mount_target" "pixies_node_efs_mt_1" {
+#   file_system_id  = aws_efs_file_system.pixies_node_efs.id
+#   subnet_id       = module.vpc.private_subnets[1]
+#   security_groups = [aws_security_group.allow_nfs.id]
+# }
 
 # # Role for Argo to manage pods
 # resource "kubernetes_role_v1" "argo_pod_patch_role" {
