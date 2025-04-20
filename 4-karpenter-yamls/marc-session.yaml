@@ -1,0 +1,44 @@
+
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: zone-cpu
+  annotations:
+    kubernetes.io/description: "General purpose NodePool for CPU enabled zone processing"
+spec:
+  disruption:
+    consolidationPolicy: WhenEmpty
+    consolidateAfter: 600s # scale down nodes after 10 minutes without workloads (excluding daemons)
+  template:
+    metadata:
+      labels:
+        pool-type: zone-pipeline-pool
+        node-type: zone-cpu
+      annotations:
+        project: bda
+    spec:
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        name: big-ebs-100g
+        kind: EC2NodeClass
+      taints:
+        - key: "s3gis.be/pool"
+          value: "zone-cpu"
+          effect: "NoSchedule"
+      requirements: 
+      - key: "node.kubernetes.io/instance-type"
+        operator: In
+        values: ["c6a.4xlarge"] 
+      - key: kubernetes.io/os
+        operator: In
+        values:
+        - linux
+      - key: kubernetes.io/arch
+        operator: In
+        values:
+        - amd64
+      - key: karpenter.sh/capacity-type
+        operator: In
+        values:
+        - on-demand
+  # weight: 100

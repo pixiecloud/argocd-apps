@@ -1,0 +1,53 @@
+
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: video-gpu
+  annotations:
+    kubernetes.io/description: "General purpose NodePool for video processing"
+spec:
+  disruption:
+    consolidationPolicy: WhenEmpty
+    consolidateAfter: 600s # scale down nodes after 10 minutes without workloads (excluding daemons)
+  template:
+    metadata:
+      labels:
+        pool-type: video-pipeline-pool
+        node-type: video-gpu
+      annotations:
+        project: bda
+    spec:
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        name: big-ebs-100g
+        kind: EC2NodeClass
+      taints:
+        - key: "s3gis.be/pool"
+          value: "video-gpu"
+          effect: "NoSchedule"
+      requirements:
+      # - key: karpenter.k8s.aws/instance-generation
+      #   operator: In
+      #   values: 
+      #   - "6"
+      - key: karpenter.k8s.aws/instance-family
+        operator: In
+        values:
+        - g4dn  
+        - g5
+      - key: karpenter.k8s.aws/instance-size
+        operator: In
+        values: ["2xlarge"] 
+      - key: kubernetes.io/os
+        operator: In
+        values:
+        - linux
+      - key: kubernetes.io/arch
+        operator: In
+        values:
+        - amd64
+      - key: karpenter.sh/capacity-type
+        operator: In
+        values:
+        - on-demand
+  # weight: 100

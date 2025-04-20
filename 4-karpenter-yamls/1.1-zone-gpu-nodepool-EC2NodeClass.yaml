@@ -1,0 +1,52 @@
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: zone-gpu
+  annotations:
+    kubernetes.io/description: "General purpose NodePool for GPU enabled zone processing"
+spec:
+  disruption:
+    consolidationPolicy: WhenEmpty
+    consolidateAfter: 600s # scale down nodes after 10 minutes without workloads (excluding daemons)
+  limits:
+    cpu: 1k
+    memory: 500Gi
+  template:
+    metadata:
+      labels:
+        pool-type: zone-pipeline-pool
+        node-type: zone-gpu
+      annotations:
+        project: bda
+    spec:
+
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        name: big-ebs-100g
+        kind: EC2NodeClass
+      taints:
+        - key: "s3gis.be/pool"
+          value: "zone-gpu"
+          effect: "NoSchedule"
+      requirements:
+      - key: karpenter.k8s.aws/instance-family
+        operator: In
+        values:
+        - g4dn
+        - g5   
+      - key: karpenter.k8s.aws/instance-size
+        operator: In
+        values: ["4xlarge"] 
+      - key: kubernetes.io/os
+        operator: In
+        values:
+        - linux
+      - key: kubernetes.io/arch
+        operator: In
+        values:
+        - amd64
+      - key: karpenter.sh/capacity-type
+        operator: In
+        values:
+        - on-demand
+  weight: 100

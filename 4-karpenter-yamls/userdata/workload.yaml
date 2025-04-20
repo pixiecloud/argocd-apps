@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pixies-userdata
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: pixies-userdata
+  template:
+    metadata:
+      labels:
+        app: pixies-userdata
+    spec:
+      nodeSelector:
+        intent: pixies-userdata
+      containers:
+      - name: pixies-userdata
+        image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
+        resources:
+          requests:
+            cpu: 512m
+            memory: 512Mi
+      tolerations:
+      - key: "s3gis.be/pool"
+        operator: "Equal"
+        value: "pixies-userdata"
+        effect: "NoSchedule"
