@@ -167,9 +167,9 @@ module "eks_blueprints_addons" {
 
   create_delay_dependencies = [for prof in module.eks.eks_managed_node_groups : prof.node_group_arn]
   
-  enable_argocd                                = true
-  enable_argo_rollouts                         = true
-  enable_argo_workflows                        = true
+  enable_argocd                                = false #true
+  enable_argo_rollouts                         = false #true
+  enable_argo_workflows                        = false #true
   enable_aws_load_balancer_controller = true
   enable_metrics_server               = true
   
@@ -183,7 +183,7 @@ module "eks_blueprints_addons" {
   }
 }
 
-  enable_aws_for_fluentbit = true
+  enable_aws_for_fluentbit = false #true
   aws_for_fluentbit = {
     set = [
       {
@@ -391,23 +391,6 @@ resource "aws_efs_file_system" "pixies_node_efs" {
   encrypted      = true # collins
 }
 
-# resource "aws_efs_file_system" "pixies_node_efs" {
-#   creation_token = "pixies-efs"
-#   dynamic "lifecycle_policy" {
-#     for_each = var.lifecycle_policy
-#     content {
-#       transition_to_ia = lookup(lifecycle_policy.value, "transition_to_ia", null)
-#     }
-#   }
-#   performance_mode                = var.performance_mode
-#   throughput_mode                 = var.throughput_mode
-#   provisioned_throughput_in_mibps = var.provisioned_throughput_in_mibps
-#   # encrypted                       = var.encrypted  
-#   # kms_key_id                      = var.kms_key_id  
-
-#   tags = local.tags  
-# }
-
 resource "aws_efs_mount_target" "pixies_node_efs_mt_0" {
   file_system_id  = aws_efs_file_system.pixies_node_efs.id
   subnet_id       = module.vpc.private_subnets[0]
@@ -420,38 +403,38 @@ resource "aws_efs_mount_target" "pixies_node_efs_mt_1" {
   security_groups = [aws_security_group.allow_nfs.id]
 }
 
-# Role for Argo to manage pods
-resource "kubernetes_role_v1" "argo_pod_patch_role" {
-  metadata {
-    name      = "argo-pod-patch-role"
-    namespace = "argo"
-  }
+# # Role for Argo to manage pods
+# resource "kubernetes_role_v1" "argo_pod_patch_role" {
+#   metadata {
+#     name      = "argo-pod-patch-role"
+#     namespace = "argo"
+#   }
 
-  rule {
-    api_groups = [""]
-    resources  = ["pods"]
-    verbs      = ["get", "list", "watch", "patch", "delete"]
-  }
-}
+#   rule {
+#     api_groups = [""]
+#     resources  = ["pods"]
+#     verbs      = ["get", "list", "watch", "patch", "delete"]
+#   }
+# }
 
-# RoleBinding for the default service account in argo namespace
-resource "kubernetes_role_binding_v1" "argo_pod_patch_binding" {
-  depends_on = [module.eks]  # Ensures that the role and role binding are created after the cluster is fully set up
+# # RoleBinding for the default service account in argo namespace
+# resource "kubernetes_role_binding_v1" "argo_pod_patch_binding" {
+#   depends_on = [module.eks]  # Ensures that the role and role binding are created after the cluster is fully set up
   
-  metadata {
-    name      = "argo-pod-patch-binding"
-    namespace = "argo"
-  }
+#   metadata {
+#     name      = "argo-pod-patch-binding"
+#     namespace = "argo"
+#   }
 
-  role_ref {
-    api_group = "rbac.authorization.k8s.io"
-    kind      = "Role"
-    name      = kubernetes_role_v1.argo_pod_patch_role.metadata[0].name
-  }
+#   role_ref {
+#     api_group = "rbac.authorization.k8s.io"
+#     kind      = "Role"
+#     name      = kubernetes_role_v1.argo_pod_patch_role.metadata[0].name
+#   }
 
-  subject {
-    kind      = "ServiceAccount"
-    name      = "default"
-    namespace = "argo"
-  }
-}
+#   subject {
+#     kind      = "ServiceAccount"
+#     name      = "default"
+#     namespace = "argo"
+#   }
+# }
